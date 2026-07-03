@@ -1,0 +1,2042 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>最后一夜</title>
+<style>
+/* ============================================================
+   美术 v1 · 卷宗拼贴 70% 提取
+   ============================================================ */
+
+/* === 0. 字体加载（本地 fonts/） === */
+@font-face {
+  font-family: 'Cormorant';
+  src: url('fonts/cormorant-bold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'SourceHanSerif';
+  src: url('fonts/source-han-serif.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'LXGWWenKai';
+  src: url('fonts/lxgw-wenkai.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'EBGaramond';
+  src: url('fonts/eb-garamond-italic.ttf') format('truetype');
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+
+/* === 1. 全局变量 === */
+:root {
+  --bg: #15151a;            /* 略冷一点的深蓝灰底 */
+  --bg-2: #1f1f25;
+  --fg: #e8e6df;
+  --fg-dim: #999292;
+  --line: #3a3530;
+  --accent: #c9c9d0;
+  --warm-bg: #f5ecd9;
+  --warm-fg: #2a2218;
+  --warm-line: #8a7a55;
+  /* 美术新增 */
+  --paper: #d8c8a0;         /* 旧纸（提示/标签） */
+  --gold: #c9a960;          /* 主金黄 */
+  --gold-soft: rgba(201,169,96,0.55);
+  --gold-bright: #ffd060;   /* shelf 高亮已经在用 */
+  --ink: #2a2014;           /* 沉墨 */
+  --font-display: 'Cormorant', 'Georgia', 'Times New Roman', serif;
+  --font-zh: 'SourceHanSerif', 'Source Han Serif', 'Songti SC', 'SimSun', serif;
+  --font-warm: 'LXGWWenKai', 'Kaiti SC', 'KaiTi', cursive;
+  --font-en-italic: 'EBGaramond', 'Georgia', serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background-color: var(--bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: var(--fg);
+  font-family: var(--font-zh);          /* 中文衬线打底 */
+  font-size: 16px;
+  line-height: 1.7;
+  min-height: 100vh;
+  overflow-x: hidden;       /* 防止场景图 100vw 突破时出横向滚动条 */
+  transition: background-color 0.6s ease;
+}
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 40px 40px 80px;
+  min-height: 100vh;
+}
+/* 纯文本块限宽居中，避免在宽屏上一行字横跨到屏幕边 */
+#app > p.narration,
+#app > .speaker-z,
+#app > .interactive-card,
+#app > blockquote {
+  max-width: 780px;
+  margin-left: auto;
+  margin-right: auto;
+}
+body.warm { background-color: var(--warm-bg); color: var(--warm-fg); }
+/* 当暖段同时挂着 S4 全屏背景时，文字直接读 S4 会和图融在一起，强制改成米色 + 重阴影 */
+body.warm.with-bg-scrim {
+  color: #f4ecdc;
+}
+body.warm.with-bg-scrim .scene-title,
+body.warm.with-bg-scrim .narration,
+body.warm.with-bg-scrim .narration.dim,
+body.warm.with-bg-scrim h1 {
+  color: #f4ecdc;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.92), 0 0 14px rgba(0,0,0,0.6);
+}
+body.warm.with-bg-scrim .narration.dim { color: rgba(244,236,220,0.78); font-style: italic; }
+/* 暖段加深暗罩，进一步压住背景图 */
+body.warm.with-bg-scrim::before { background: rgba(0,0,0,0.55); }
+/* 暖段中文字体全切换到霞鹜文楷 */
+body.warm .narration,
+body.warm .scene-title,
+body.warm .letter,
+body.warm .blank-page,
+body.warm .credits p {
+  font-family: var(--font-warm);
+}
+/* credits 英文用 EB Garamond Italic */
+.credits p {
+  font-family: var(--font-en-italic);
+  font-style: italic;
+  font-size: 17px;
+  letter-spacing: 4px;
+}
+
+/* 当 body 上挂了 S0 / S4 这类全屏背景图时，加一层半透明暗罩，
+   让上面的文字不至于和图融在一起读不清 */
+body.with-bg-scrim::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  z-index: 0;
+}
+#app { position: relative; z-index: 1; }   /* 在暗罩之上，文字可读 */
+
+/* 通用排版 */
+h1 {
+  font-family: var(--font-display);
+  font-size: 38px;
+  letter-spacing: 12px;
+  color: var(--paper);
+  font-weight: 700;
+  margin: 0 0 28px;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+.scene-title {
+  font-size: 14px; letter-spacing: 6px; color: var(--fg-dim);
+  border-bottom: 1px dashed var(--line);
+  padding-bottom: 8px; margin-bottom: 18px;
+}
+.narration { margin: 12px 0; white-space: pre-wrap; }
+.narration.dim { color: var(--fg-dim); font-style: italic; font-size: 14px; }
+.speaker-z {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 20px 0;
+  background: var(--bg-2);
+  white-space: pre-wrap;
+}
+.speaker-z .label { display: block; font-size: 12px; letter-spacing: 4px; color: var(--fg-dim); margin-bottom: 8px; }
+
+/* 输入框 */
+.name-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--fg);
+  color: var(--fg);
+  font-size: 18px;
+  padding: 8px 4px;
+  width: 240px;
+  font-family: inherit;
+  outline: none;
+}
+
+/* 按钮 */
+button {
+  background: transparent;
+  color: var(--fg);
+  border: 1px dashed var(--line);
+  padding: 10px 18px;
+  margin: 6px 6px 6px 0;
+  font-family: var(--font-zh);
+  font-size: 15px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+button:hover { border-color: var(--fg); background: var(--bg-2); }
+button:disabled { opacity: 0.5; cursor: default; }
+button.primary {
+  border-style: solid;
+  border-color: var(--gold);
+  color: var(--paper);
+  padding: 12px 22px;
+}
+button.primary:hover { background: rgba(201,169,96,0.10); color: #fff; }
+button.choice {
+  display: block; width: 100%; text-align: left; margin: 8px 0; padding: 12px 16px;
+  font-family: var(--font-zh);
+  border-color: var(--line);
+}
+button.choice:hover { border-color: var(--gold-soft); background: rgba(201,169,96,0.05); }
+button.choice.wrong { border-color: #6a4040; color: #b88; }
+button.choice.correct { border-color: #4a6a4a; color: #8b8; }
+body.warm button { color: var(--warm-fg); border-color: var(--warm-line); }
+body.warm button:hover { background: rgba(0,0,0,0.05); }
+
+/* 占位灰框 */
+.placeholder-box {
+  display: inline-block;
+  border: 1px dashed var(--line);
+  background: var(--bg-2);
+  color: var(--fg-dim);
+  padding: 6px 14px;
+  margin: 8px 0;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+body.warm .placeholder-box { border-color: var(--warm-line); background: rgba(0,0,0,0.04); color: var(--warm-line); }
+
+/* ============================================================
+   场景舞台（探索）
+   ============================================================ */
+.scene-stage {
+  position: relative;
+  /* 突破 #app 的 1280px 限宽，长（宽度）铺满整个视窗 */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-top: 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, #20202a 0%, #1a1a22 100%);
+  border: 1px dashed var(--line);
+  overflow: hidden;
+  user-select: none;
+  min-height: 240px;        /* 占位灰框时的兜底高度 */
+}
+.scene-stage.has-bg {
+  border: none;
+  background: none;
+  min-height: 0;
+}
+.scene-bg {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  pointer-events: none;     /* 让 hotspot 接住点击 */
+}
+.stage-bg-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-dim);
+  font-size: 13px;
+  letter-spacing: 4px;
+  opacity: 0.45;
+  pointer-events: none;
+  text-align: center;
+}
+.scene-stage.has-bg .stage-bg-label { display: none; }
+
+/* 旁白叠在图片顶部，正文用衬线，气质冷峻 */
+.scene-narration {
+  position: absolute;
+  left: 0; right: 0;
+  top: 0;
+  padding: 90px 36px 50px;          /* 留够给左上"标题"那个浮层 */
+  background: linear-gradient(180deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0) 100%);
+  color: #f0ece2;
+  text-shadow: 0 1px 5px rgba(0,0,0,0.95);
+  text-align: center;
+  pointer-events: none;
+  z-index: 5;
+  font-family: var(--font-zh);
+  letter-spacing: 1.5px;
+  font-size: 15px;
+  line-height: 1.9;
+}
+.scene-narration p { margin: 5px 0; }
+
+/* 场景标题：双语 · 左上浮层（卷宗式标签） */
+.scene-title-overlay {
+  position: absolute;
+  top: 26px;
+  left: 32px;
+  z-index: 6;
+  padding: 10px 18px 12px 14px;
+  background: linear-gradient(180deg, rgba(10,10,14,0.72), rgba(20,18,12,0.85));
+  border-left: 2px solid var(--gold);
+  pointer-events: none;
+  backdrop-filter: blur(3px);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+}
+.scene-title-overlay .title-en {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 5px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+.scene-title-overlay .title-zh {
+  font-family: var(--font-zh);
+  font-size: 15px;
+  letter-spacing: 4px;
+  color: #f0ece2;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  font-weight: 400;
+}
+
+/* 热点：小圆环 + 下方文字。中心点定位在数据的 x,y 上 */
+.hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  width: 60px;          /* 文字宽度边界，click target 略大 */
+  pointer-events: auto;
+}
+.hotspot-ring {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.10);
+  box-shadow: 0 0 0 0 rgba(255,255,255,0);
+  animation: ringPulse 2.6s ease-in-out infinite;
+  flex-shrink: 0;
+  transition: transform 0.15s, background 0.15s, border-color 0.15s;
+}
+@keyframes ringPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+  50%      { box-shadow: 0 0 0 8px rgba(255,255,255,0.18); }
+}
+.hotspot-label {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #f0f0f0;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  letter-spacing: 2px;
+  pointer-events: none;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.hotspot:hover .hotspot-ring {
+  background: rgba(255,255,255,0.3);
+  border-color: #fff;
+  transform: scale(1.25);
+}
+.hotspot.examined .hotspot-ring {
+  border-color: rgba(255,255,255,0.35);
+  background: rgba(0,0,0,0.35);
+  animation: none;
+}
+.hotspot.examined .hotspot-label { opacity: 0.5; }
+
+/* 高亮（场景一答对后吸引玩家点书架） */
+.hotspot.highlight .hotspot-ring {
+  border-color: #ffd060;
+  background: rgba(255, 208, 96, 0.30);
+  animation: ringPulseGold 0.95s ease-in-out infinite;
+  width: 28px;
+  height: 28px;
+}
+@keyframes ringPulseGold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 208, 96, 0); transform: scale(1); }
+  50%      { box-shadow: 0 0 0 18px rgba(255, 208, 96, 0.45); transform: scale(1.15); }
+}
+.hotspot.highlight .hotspot-label {
+  color: #ffd060;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.95);
+}
+
+/* shelf 提示气泡（挂在高亮 hotspot 上方，跟着抖动吸睛） */
+.shelf-hint-bubble {
+  position: absolute;
+  bottom: calc(100% + 26px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 208, 96, 0.96);
+  color: #2a1f0a;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 8px 14px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+  animation: floatHint 1.6s ease-in-out infinite;
+  z-index: 30;
+}
+.shelf-hint-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(255, 208, 96, 0.96);
+}
+@keyframes floatHint {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-5px); }
+}
+
+/* 场景剧情叠层（取代原来的 scene-dialog） */
+.scene-outro-overlay {
+  position: absolute;
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%);
+  width: min(640px, 78%);
+  background: rgba(15, 15, 20, 0.94);
+  border: 1px solid var(--accent);
+  padding: 22px 30px 20px;
+  color: #f0f0f0;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85);
+  z-index: 12;
+  animation: tooltipIn 0.22s ease-out;
+}
+.scene-outro-overlay.clickable { cursor: pointer; }
+.scene-outro-overlay.clickable:hover { background: rgba(25, 25, 30, 0.97); }
+.scene-outro-overlay p { margin: 8px 0; }
+.scene-outro-overlay p.quote {
+  border-left: 2px solid var(--accent);
+  padding: 4px 14px;
+  margin: 12px 0;
+  color: rgba(220,220,235,0.9);
+  font-style: italic;
+}
+.scene-outro-overlay p.dim {
+  color: rgba(220,220,235,0.75);
+  font-style: italic;
+}
+.scene-outro-overlay .click-hint {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(220,220,235,0.55);
+  font-style: italic;
+  letter-spacing: 2px;
+  text-align: right;
+}
+.scene-outro-overlay .tooltip-close {
+  position: absolute; top: 6px; right: 8px;
+  background: transparent; border: none; color: rgba(220,220,235,0.55);
+  font-size: 22px; cursor: pointer; padding: 0 6px; margin: 0; line-height: 1;
+}
+.scene-outro-overlay .tooltip-close:hover { color: #fff; }
+/* 信的展开比常规对话稍宽，整体走"信纸"质感 */
+.scene-outro-overlay.letter-reveal {
+  width: min(720px, 82%);
+  bottom: 60px;
+  padding: 28px 38px 24px;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/></svg>"),
+    linear-gradient(170deg, rgba(28,25,20,0.96) 0%, rgba(18,16,12,0.96) 100%);
+  border: 1px solid var(--gold-soft);
+  font-family: var(--font-zh);
+}
+
+/* 探索进度提示 · 现在叠在场景图右上 / 右下 */
+.scene-status-top, .scene-status-action {
+  position: absolute;
+  z-index: 7;
+  pointer-events: auto;
+}
+.scene-status-top {
+  top: 22px;
+  right: 28px;
+  max-width: 360px;
+  text-align: right;
+  color: #f0f0f0;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.45);
+  border-right: 2px solid rgba(220,220,235,0.55);
+  backdrop-filter: blur(2px);
+}
+.scene-status-top .hint { font-style: italic; letter-spacing: 1px; }
+.scene-status-top .hint.shelf-hint { color: #ffd060; font-weight: 500; font-style: normal; }
+.scene-status-action {
+  right: 28px;
+  bottom: 28px;
+}
+.scene-status-action button {
+  margin: 0;
+  background: rgba(20,18,12,0.75);
+  border: 1px solid var(--gold);
+  color: var(--paper);
+  padding: 8px 22px 10px;
+  letter-spacing: 2px;
+  backdrop-filter: blur(2px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.3;
+}
+.scene-status-action button:hover { background: rgba(60,48,24,0.85); color: #fff; }
+.scene-status-action .btn-en {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 5px;
+  color: var(--gold);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+.scene-status-action .btn-zh {
+  font-family: var(--font-zh);
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+/* 仅占位模式（无 bgImage 时）状态行回归到舞台下方 */
+.scene-stage:not(.has-bg) .scene-status-top,
+.scene-stage:not(.has-bg) .scene-status-action {
+  position: static;
+  background: none;
+  border: none;
+  text-shadow: none;
+  color: var(--fg-dim);
+  padding: 6px 0;
+  margin: 4px 0;
+  text-align: left;
+}
+
+/* ============================================================
+   模态
+   ============================================================ */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.18s ease-out;
+}
+body.warm .modal-backdrop { background: rgba(40,30,20,0.55); }
+.modal {
+  background:
+    /* 微噪点纹理（SVG 内嵌，无外部依赖） */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.10'/></svg>"),
+    linear-gradient(165deg, #25221d 0%, #1c1a16 100%);
+  border: 1px solid var(--gold-soft);
+  padding: 28px 32px 24px;
+  max-width: 540px;
+  width: calc(100% - 40px);
+  max-height: 84vh;
+  overflow: auto;
+  position: relative;
+  animation: modalIn 0.22s cubic-bezier(.2,.7,.3,1);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,169,96,0.12);
+}
+.modal.large { max-width: 640px; }
+body.warm .modal { background: var(--warm-bg); color: var(--warm-fg); border-color: var(--warm-line); }
+.modal-title {
+  font-size: 13px;
+  letter-spacing: 4px;
+  color: var(--fg-dim);
+  border-bottom: 1px dashed var(--line);
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+}
+body.warm .modal-title { color: var(--warm-line); border-color: var(--warm-line); }
+.modal-close {
+  position: absolute; top: 6px; right: 10px;
+  width: 30px; height: 30px;
+  background: transparent; border: none; color: var(--fg-dim);
+  font-size: 22px; cursor: pointer;
+  line-height: 1; padding: 0; margin: 0;
+}
+.modal-close:hover { color: var(--fg); }
+body.warm .modal-close { color: var(--warm-line); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 谜题模态内部样式 */
+.puzzle-header {
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gold-soft);
+}
+.puzzle-header-en {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.puzzle-header-zh {
+  font-family: var(--font-zh);
+  font-size: 16px;
+  letter-spacing: 3px;
+  color: #f0ece2;
+}
+.puzzle-preamble { margin-bottom: 16px; font-family: var(--font-zh); }
+.puzzle-prompt { margin: 12px 0 16px; white-space: pre-wrap; font-family: var(--font-zh); font-size: 15px; }
+.feedback { margin: 12px 0; padding: 10px 14px; font-size: 14px; }
+.feedback.wrong { border-left: 2px solid #b88; color: #d8a8a8; background: rgba(180,80,80,0.06); }
+.feedback.correct { border-left: 2px solid #8b8; color: #bcd8bc; background: rgba(80,180,80,0.06); white-space: pre-wrap; }
+body.warm .feedback.correct { color: #4a5a3a; background: rgba(120,160,80,0.10); border-color: #8a9a5a; }
+body.warm .feedback.wrong { color: #7a4040; background: rgba(180,80,80,0.06); border-color: #b88; }
+
+/* "可点击卡片"（信纸背面、锁等） */
+.interactive-card {
+  display: block;
+  width: 100%;
+  padding: 18px 22px;
+  margin: 16px 0;
+  background: var(--bg-2);
+  border: 1px dashed var(--line);
+  color: var(--fg-dim);
+  cursor: pointer;
+  text-align: center;
+  letter-spacing: 3px;
+  transition: all 0.15s;
+  animation: hotspotPulse 2.6s ease-in-out infinite;
+}
+.interactive-card:hover {
+  border-color: var(--fg);
+  color: var(--fg);
+  background: rgba(255,255,255,0.04);
+}
+
+/* ============================================================
+   翻页照片册（v1 版 · 鼠标视差 + 点击翻页 · 全立体）
+   ============================================================ */
+.book-stage {
+  perspective: 1800px;
+  perspective-origin: 50% 45%;
+  margin: 30px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 660px;
+  cursor: grab;
+}
+.book {
+  position: relative;
+  width: min(960px, 92vw);
+  aspect-ratio: 3 / 2;
+  transform-style: preserve-3d;
+  transition: transform 0.15s ease-out;
+  will-change: transform;
+}
+.book::before {
+  content: '';
+  position: absolute;
+  left: 50%; top: 0;
+  width: 6px; height: 100%;
+  transform: translateX(-3px);
+  background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0) 100%);
+  z-index: 999;
+  pointer-events: none;
+}
+.book-base {
+  position: absolute;
+  inset: 0;
+  background: var(--warm-bg);
+  border: 1px solid var(--warm-line);
+  transform: translateZ(-12px);
+  box-shadow: 0 30px 40px -20px rgba(0,0,0,0.55);
+}
+.page {
+  position: absolute;
+  top: 0; left: 50%;
+  width: 50%;
+  height: 100%;
+  background: var(--warm-bg);
+  color: var(--warm-fg);
+  border: 1px solid var(--warm-line);
+  transform-origin: left center;
+  transition: transform 1.0s cubic-bezier(.55,.05,.4,1);
+  transform-style: preserve-3d;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.18);
+}
+.page .front, .page .back {
+  position: absolute;
+  inset: 0;
+  padding: 24px 20px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--warm-bg);
+}
+/* 关键：img 自己也必须 hide backface，否则浏览器可能透过 .front
+   把上一张照片的镜像显示出来 */
+.page img, .page .photo-frame {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.page .back { transform: rotateY(180deg); }
+.page.flipped { transform: rotateY(-180deg); }
+/* 当此面装的是真照片：去 padding 让图填满整页，隐藏 caption */
+.page .front.has-image, .page .back.has-image { padding: 0; }
+.page .front.has-image .photo-frame,
+.page .back.has-image  .photo-frame {
+  width: 100%; height: 100%;
+  border: none;
+  margin: 0;
+  background: transparent;
+}
+.page .front.has-image .photo-caption,
+.page .back.has-image  .photo-caption { display: none; }
+
+.photo-frame {
+  width: 80%; height: 65%;
+  border: 1px dashed var(--warm-line);
+  background: rgba(0,0,0,0.04);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--warm-line);
+  letter-spacing: 4px; font-size: 14px;
+  margin-bottom: 14px;
+  white-space: pre-wrap;
+  text-align: center;
+  padding: 8px;
+}
+.photo-caption { font-size: 13px; color: var(--warm-line); }
+
+.book-controls { text-align: center; margin: 18px 0; }
+.book-controls button { color: var(--warm-fg); border-color: var(--warm-line); background: rgba(255,255,255,0.4); }
+body.warm .scene-title, body.warm .narration.dim { color: var(--warm-line); }
+body.warm .narration { color: var(--warm-fg); }
+
+/* 结尾 credits */
+.credits {
+  text-align: center;
+  margin: 60px auto;
+  font-size: 16px;
+  line-height: 2.4;
+  letter-spacing: 3px;
+  color: var(--warm-line);
+}
+.credits p { margin: 4px 0; font-family: "Georgia", "Times New Roman", serif; font-style: italic; }
+body:not(.warm) .credits { color: var(--fg-dim); }
+
+/* 结尾页 · Z 的信 + 留白 + credits */
+.letter {
+  margin: 30px auto;
+  max-width: 600px;
+  padding: 40px 44px 36px;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/></svg>"),
+    linear-gradient(165deg, #f7eedb 0%, #ece0c3 100%);
+  color: var(--warm-fg);
+  border: 1px solid var(--warm-line);
+  white-space: pre-wrap; line-height: 2.15; font-size: 17px;
+  letter-spacing: 1px;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+  font-family: var(--font-warm);
+  position: relative;
+  will-change: transform;
+  transform-style: preserve-3d;
+  transition: transform 0.18s ease-out;
+}
+.blank-page {
+  margin: 30px auto;
+  max-width: 600px;
+  padding: 80px 44px;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/></svg>"),
+    linear-gradient(165deg, #f7eedb 0%, #ece0c3 100%);
+  color: var(--warm-fg);
+  border: 1px solid var(--warm-line);
+  text-align: center; line-height: 2.4; font-size: 19px;
+  white-space: pre-wrap;
+  letter-spacing: 1.5px;
+  font-family: var(--font-warm);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+}
+
+/* Z 信的 3D 视差舞台 */
+.letter-stage {
+  perspective: 1600px;
+  perspective-origin: 50% 45%;
+  margin: 30px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+}
+
+/* ============================================================
+   素材接入支持
+   ============================================================ */
+/* 照片帧里放真图片时：去掉占位虚线，让图片填满 */
+.photo-frame.has-image {
+  padding: 0;
+  background: transparent;
+  border-style: solid;
+  border-color: var(--warm-line);
+}
+.photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 模态里展示道具大图（替代占位文字） */
+.prop-image {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 12px;
+  border: 1px solid var(--line);
+  background: rgba(0,0,0,0.2);
+}
+body.warm .prop-image { border-color: var(--warm-line); background: rgba(0,0,0,0.04); }
+
+/* 线索浮卡（替代屏幕中央的模态） */
+.clue-tooltip {
+  position: absolute;
+  z-index: 1000;
+  width: 300px;
+  max-width: 92%;
+  background: rgba(18, 18, 22, 0.96);
+  border: 1px solid rgba(220,220,235,0.45);
+  color: var(--fg);
+  padding: 10px 16px 14px 14px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.55);
+  font-size: 14px;
+  line-height: 1.65;
+  animation: tooltipIn 0.18s ease-out;
+}
+.clue-tooltip p { margin: 6px 0; }
+.clue-tooltip .clue-tooltip-title {
+  font-size: 12px; letter-spacing: 4px; color: var(--fg-dim);
+  border-bottom: 1px dashed rgba(220,220,235,0.25);
+  padding-bottom: 6px; margin: 0 24px 8px 0;
+}
+.clue-tooltip .tooltip-close {
+  position: absolute; top: 2px; right: 4px;
+  background: transparent; border: none; color: var(--fg-dim);
+  font-size: 20px; cursor: pointer; padding: 0 6px; margin: 0;
+  line-height: 1;
+}
+.clue-tooltip .tooltip-close:hover { color: var(--fg); }
+.clue-tooltip .placeholder-box { background: rgba(255,255,255,0.04); }
+.clue-tooltip .clue-prop {
+  margin: 4px 0 10px;
+  text-align: center;
+}
+.clue-tooltip .clue-prop img {
+  max-width: 100%;
+  max-height: 170px;
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+}
+/* 模态里展示道具大图（地图等） */
+.modal-prop {
+  max-width: 100%;
+  max-height: 360px;
+  display: block;
+  margin: 0 auto 14px;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.55));
+}
+/* 指向 hotspot 的小箭头 */
+.clue-tooltip::before {
+  content: '';
+  position: absolute;
+  width: 10px; height: 10px;
+  background: inherit;
+  border: 1px solid rgba(220,220,235,0.45);
+}
+.clue-tooltip[data-arrow="left"]::before {
+  left: -6px; top: 50%; transform: translateY(-50%) rotate(45deg);
+  border-right: none; border-top: none;
+}
+.clue-tooltip[data-arrow="right"]::before {
+  right: -6px; top: 50%; transform: translateY(-50%) rotate(45deg);
+  border-left: none; border-bottom: none;
+}
+.clue-tooltip[data-arrow="top"]::before {
+  top: -6px; left: 50%; transform: translateX(-50%) rotate(45deg);
+  border-right: none; border-bottom: none;
+}
+.clue-tooltip[data-arrow="bottom"]::before {
+  bottom: -6px; left: 50%; transform: translateX(-50%) rotate(45deg);
+  border-left: none; border-top: none;
+}
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 场景内嵌对话框（剧情推进，点击逐句往下走） */
+.scene-dialog {
+  margin: 18px auto;
+  padding: 18px 26px;
+  background: rgba(20, 20, 26, 0.93);
+  border: 1px solid var(--accent);
+  color: var(--fg);
+  max-width: 820px;
+  position: relative;
+  transition: background 0.15s;
+}
+.scene-dialog.clickable { cursor: pointer; }
+.scene-dialog.clickable:hover { background: rgba(30, 30, 36, 0.96); }
+.scene-dialog p { margin: 8px 0; }
+.scene-dialog .inline-quote {
+  border-left: 2px solid var(--accent);
+  padding: 4px 14px;
+  margin: 12px 0;
+  color: var(--fg-dim);
+  font-style: italic;
+}
+.scene-dialog .click-hint {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--fg-dim);
+  font-style: italic;
+  letter-spacing: 2px;
+  text-align: right;
+}
+
+/* 背景音乐控制按钮 */
+#bgm-toggle {
+  position: fixed;
+  left: 10px; bottom: 8px;
+  background: rgba(20,20,24,0.55);
+  border: 1px dashed var(--line);
+  color: var(--fg-dim);
+  font-size: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+  z-index: 4000;
+  letter-spacing: 2px;
+  font-family: inherit;
+  margin: 0;
+}
+#bgm-toggle:hover { color: var(--fg); border-color: var(--fg); }
+body.warm #bgm-toggle {
+  background: rgba(245,236,217,0.7);
+  border-color: var(--warm-line);
+  color: var(--warm-line);
+}
+body.warm #bgm-toggle:hover { color: var(--warm-fg); border-color: var(--warm-fg); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root"></div>
+
+<audio id="bgm" src="Attic%20Whisper.wav" loop preload="auto"></audio>
+<button id="bgm-toggle" title="背景音乐 开/关">♪ OFF</button>
+
+<script>
+/* ============================================================
+   状态
+   ============================================================ */
+const state = {
+  detectiveName: '',
+  solved: [false, false, false, false, false],
+  currentScene: 'intro',
+  examined: { sp: new Set(), s1: new Set(), s2: new Set(), s3: new Set(), sl: new Set() },
+  bookPage: 0,
+  scene1ShelfQuestActive: false,
+};
+
+const app = document.getElementById('app');
+const modalRoot = document.getElementById('modal-root');
+
+/* 切换全屏背景图（序章 S0 / 锁面 S4 等）——直接挂在 body 上最稳 */
+function setBgImage(url) {
+  if (url) {
+    document.body.style.backgroundImage = `url('${url}')`;
+    document.body.classList.add('with-bg-scrim');
+  } else {
+    document.body.style.backgroundImage = '';
+    document.body.classList.remove('with-bg-scrim');
+  }
+}
+
+/* ============================================================
+   BGM：浏览器不允许"页面一加载就播"，所以等首次用户交互再尝试。
+   按钮可手动切换。
+   ============================================================ */
+const bgm = document.getElementById('bgm');
+const bgmBtn = document.getElementById('bgm-toggle');
+bgm.volume = 0.45;
+function syncBgmBtn() {
+  bgmBtn.textContent = bgm.paused ? '♪ OFF' : '♪ ON';
+}
+function tryStartBGM() {
+  if (!bgm.paused) return;
+  bgm.play().then(syncBgmBtn).catch(() => { /* 浏览器还不让，等下一次交互 */ });
+}
+document.addEventListener('click', tryStartBGM);
+document.addEventListener('keydown', tryStartBGM);
+
+// ESC 关掉所有 tooltip
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.clue-tooltip').forEach(t => t.remove());
+  }
+});
+bgmBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  if (bgm.paused) bgm.play().then(syncBgmBtn).catch(()=>{});
+  else { bgm.pause(); syncBgmBtn(); }
+});
+bgm.addEventListener('play', syncBgmBtn);
+bgm.addEventListener('pause', syncBgmBtn);
+syncBgmBtn();
+
+function clear() { app.innerHTML = ''; }
+
+function el(tag, props = {}, ...children) {
+  const e = document.createElement(tag);
+  for (const k in props) {
+    if (k === 'class') e.className = props[k];
+    else if (k === 'html') e.innerHTML = props[k];
+    else if (k === 'style') e.setAttribute('style', props[k]);
+    else if (k.startsWith('on') && typeof props[k] === 'function') e.addEventListener(k.slice(2).toLowerCase(), props[k]);
+    else e.setAttribute(k, props[k]);
+  }
+  for (const c of children) {
+    if (c == null) continue;
+    if (typeof c === 'string') e.appendChild(document.createTextNode(c));
+    else e.appendChild(c);
+  }
+  return e;
+}
+
+function narr(text, dim = false) {
+  return el('p', { class: 'narration' + (dim ? ' dim' : '') }, text);
+}
+function zSpeak(text) {
+  const box = el('div', { class: 'speaker-z' });
+  box.appendChild(el('span', { class: 'label' }, '【Z】'));
+  box.appendChild(document.createTextNode(text));
+  return box;
+}
+function placeholder(label) {
+  return el('span', { class: 'placeholder-box' }, label);
+}
+
+/* ============================================================
+   模态系统
+   ============================================================ */
+function openModal({ title, contentBuilder, size = 'sm', closable = true, closeOnBackdrop = true, onClose = null }) {
+  const backdrop = el('div', { class: 'modal-backdrop' });
+  const modal = el('div', { class: 'modal' + (size === 'lg' ? ' large' : '') });
+  let lockClose = !closable;   // closable=false 时，连 ESC/backdrop 也禁用
+  let closed = false;
+  let xBtn = null;
+
+  if (title) modal.appendChild(el('div', { class: 'modal-title' }, title));
+  if (closable) {
+    xBtn = el('button', { class: 'modal-close', onclick: () => tryClose() }, '×');
+    modal.appendChild(xBtn);
+  }
+  const body = el('div');
+  modal.appendChild(body);
+  backdrop.appendChild(modal);
+  modalRoot.appendChild(backdrop);
+
+  function tryClose() { if (!lockClose) close(); }
+  function close() {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener('keydown', escHandler);
+    backdrop.remove();
+    if (onClose) onClose();
+  }
+  function lock() { lockClose = true; if (xBtn) xBtn.style.display = 'none'; }
+
+  const handle = { close, tryClose, lockUserClose: lock, bodyEl: body };
+
+  if (closable && closeOnBackdrop) {
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) tryClose(); });
+  }
+  const escHandler = e => { if (e.key === 'Escape') tryClose(); };
+  document.addEventListener('keydown', escHandler);
+
+  body.appendChild(contentBuilder(handle));
+  return handle;
+}
+
+/* ============================================================
+   通用：谜题模态
+   ============================================================ */
+function openPuzzleModal(opts) {
+  return openModal({
+    title: '',                            /* 自渲染双语 header，关掉 openModal 默认 title */
+    size: 'lg',
+    closable: true,
+    closeOnBackdrop: false,
+    contentBuilder: (handle) => {
+      const c = el('div');
+      // 双语 header
+      const header = el('div', { class: 'puzzle-header' });
+      if (opts.labelEn) header.appendChild(el('div', { class: 'puzzle-header-en' }, opts.labelEn));
+      header.appendChild(el('div', { class: 'puzzle-header-zh' }, opts.label));
+      c.appendChild(header);
+
+      if (opts.preamble) {
+        const pre = el('div', { class: 'puzzle-preamble' });
+        const lines = Array.isArray(opts.preamble) ? opts.preamble : [opts.preamble];
+        lines.forEach(t => pre.appendChild(narr(t)));
+        c.appendChild(pre);
+      }
+      c.appendChild(el('div', { class: 'puzzle-prompt' }, opts.prompt));
+
+      const btnSlot = el('div');
+      const feedbackSlot = el('div');
+
+      opts.options.forEach(o => {
+        const b = el('button', {
+          class: 'choice',
+          onclick: () => {
+            if (o.key === opts.correctKey) {
+              // 答对：关闭谜题弹窗，弹出"解出"成功弹窗
+              handle.close();
+              openSuccessModal({
+                title: opts.label + ' · 解出',
+                body: opts.onCorrectFeedback,
+                nextLabel: opts.nextLabel,
+                onContinue: opts.onSolved,
+              });
+            } else {
+              // 答错：仍在当前弹窗内给提示、可重选
+              b.classList.add('wrong'); b.disabled = true;
+              feedbackSlot.innerHTML = '';
+              feedbackSlot.appendChild(el('div', { class: 'feedback wrong' }, opts.onWrongFeedback));
+            }
+          }
+        }, `${o.key}. ${o.text}`);
+        btnSlot.appendChild(b);
+      });
+      c.appendChild(btnSlot);
+      c.appendChild(feedbackSlot);
+      return c;
+    }
+  });
+}
+
+/* "解出"成功弹窗：答对一道题就跳出来，需点"继续"才能往下走 */
+function openSuccessModal({ title, body, nextLabel, onContinue }) {
+  return openModal({
+    title: title || '✓ 解出',
+    size: 'sm',
+    closable: false,
+    contentBuilder: (handle) => {
+      const c = el('div');
+      c.appendChild(el('div', { class: 'feedback correct' }, body));
+      const btn = el('button', {
+        class: 'primary',
+        onclick: () => { handle.close(); onContinue && onContinue(); }
+      }, nextLabel || '继续');
+      c.appendChild(el('div', { style: 'margin-top: 16px; text-align: right' }, btn));
+      return c;
+    }
+  });
+}
+
+/* ============================================================
+   场景数据
+   ============================================================ */
+const sceneData = {
+  prologue: {
+    id: 'prologue',
+    examineKey: 'sp',
+    solvedIndex: 0,
+    title: '窗缝塞进来一封信',
+    titleEn: 'Prologue · A Letter at the Window',
+    bgImage: 'pics/scene/S0.png',
+    skipStatus: true,        // 不显示"已勘查 X/N"行，谜题靠点信里的"翻面"按钮触发
+    intro: [
+      '就在你写下名字的那一刻，窗缝塞进来一封信。',
+      '没有脚步声，没有署名。信封上只印着一个字母：Z。',
+    ],
+    hotspots: [
+      { id: 'letter', label: '一封信', x: '50%', y: '60%',
+        clueDesc: '' },   // 走特殊 openLetterReveal，不用通用 tooltip
+    ],
+  },
+
+  scene1: {
+    id: 'scene1',
+    examineKey: 's1',
+    solvedIndex: 1,
+    title: '第一幕 · 现场　|　场景一',
+    titleEn: 'Act I · The Scene | Locked Study',
+    bgImage: 'pics/scene/S1.jpg',
+    stageLabel: '【场景图占位 · 旧居书房（密室）】\n（之后把 1920×1080 的书房图替换此灰框）',
+    intro: [
+      '书架上的书脊一律朝外，像列队的士兵。',
+      '只有三样东西，不太对劲——',
+    ],
+    hotspots: [
+      { id: 'clock',  label: '座钟', x: '84.3%', y: '34.8%',
+        clueDesc: '摆针停在 2:47，钟摆被人为卡住了。' },
+      { id: 'candle', label: '蜡烛', x: '12.8%', y: '51.8%',
+        clueDesc: '烛台上的蜡烛烧到只剩一小截，烛泪凝在桌沿。' },
+      { id: 'shelf',  label: '书架', x: '28.0%', y: '39.2%',
+        clueDesc: '满满一墙书里，唯独缺了一本。空出的位置积了灰，唯独缺口处一尘不染——书是最近才被抽走的。' },
+    ],
+    inference: [
+      '钟停在 2:47。可一支这样粗的蜡烛，从点燃到烧成这样，至少要四个钟头。',
+      '如果她是被钟停的那一刻"带走"的，蜡烛不该烧这么短。',
+      '除非——钟是事后被人拨停的，好让所有人都以为，她消失在 2:47。',
+    ],
+    puzzle: {
+      label: '▣ 谜题②  推理',
+      labelEn: 'Puzzle II · Deduction',
+      prompt: '那么，Yvonne 真正离开书房的时间，更接近——',
+      options: [
+        { key: 'A', text: '凌晨 2:47' },
+        { key: 'B', text: '根本没有离开过' },
+        { key: 'C', text: '天亮之后' },
+        { key: 'D', text: '入夜后不久，约 22 点' },
+      ],
+      correctKey: 'D',
+      onCorrectFeedback: '蜡烛不会说谎。她在天黑后不久就走了，而有人，特意把钟拨停，演了一出"深夜失踪"。',
+      onWrongFeedback: '别看那座钟，它在骗你。看蜡烛——它烧了多久，才是真的。',
+      nextLabel: '探向书架缺口 →',
+    },
+    onSolved: () => {
+      // 激活书架重闪——玩家必须再点一下书架，剧情才继续
+      state.scene1ShelfQuestActive = true;
+      renderExploreScene('scene1');
+    },
+  },
+
+  scene2: {
+    id: 'scene2',
+    examineKey: 's2',
+    solvedIndex: 2,
+    title: '第一幕 · 现场　|　场景二 · 阁楼',
+    titleEn: 'Act I · The Scene | The Attic',
+    bgImage: 'pics/scene/S2.png',
+    stageLabel: '【场景图占位 · 阁楼】\n（之后把 1920×1080 的阁楼图替换此灰框）',
+    intro: [
+      '"最高的地方"——是阁楼。',
+      '角落里那台老留声机，唱针还搭在黑胶上，像是有人匆匆离开，忘了关。',
+    ],
+    hotspots: [
+      { id: 'gramophone', label: '留声机', x: '22.3%', y: '63.3%',
+        clueDesc: '原来曲子是从这个留声机传出来的，仔细听，似乎在唱什么……' },
+      { id: 'card', label: '撕成两半的卡片', x: '40.2%', y: '37.7%',
+        clueDesc: '拼起来，是一张图书馆的借书卡，索书号被人涂掉了大半，只剩一截：H-□□□。' },
+      { id: 'forgetmenot', label: '勿忘我', x: '51.9%', y: '60.7%',
+        clueDesc: '是勿忘我。花瓣下压着一张纸条：「数字是锁，花是钥匙。」',
+        propImage: 'pics/tools/t4.png' },
+    ],
+    inference: [
+      '留声机里那串数字，是锁。勿忘我的花语，是"勿忘"——是钥匙。',
+      '那只"会唱歌的盒子"，多半是个需要数字才能打开的音乐盒。',
+    ],
+    puzzle: {
+      label: '▣ 谜题③  解码',
+      labelEn: 'Puzzle III · Decoding',
+      prompt: '留声机反复哼的那串数字是——',
+      options: [
+        { key: 'A', text: '一四七' },
+        { key: 'B', text: '四一七' },
+        { key: 'C', text: '七四一' },
+        { key: 'D', text: '四七一' },
+      ],
+      correctKey: 'B',
+      onCorrectFeedback: '4-1-7。你拨动阁楼里那只蒙灰的音乐盒，咔哒一声，盖子弹开了。',
+      onWrongFeedback: '再听一遍那段哼唱，跟着她的调子，把数字一个一个数出来。',
+      nextLabel: '打开音乐盒 →',
+    },
+    onSolved: () => renderScene2Outro(),
+  },
+
+  scene3: {
+    id: 'scene3',
+    examineKey: 's3',
+    solvedIndex: 3,
+    title: '第二幕 · 疑云　|　场景三 · 后院老槐树下',
+    titleEn: 'Act II · The Smoke | Under the Locust',
+    bgImage: 'pics/scene/S3.png',
+    stageLabel: '【场景图占位 · 暴雨后院 · 老槐树】\n（之后把 1920×1080 的后院图替换此灰框）',
+    intro: [
+      '你蹲下身，从松动的泥里挖出一只铁皮箱。',
+      '就在你要打开它时——三件事，几乎同时浮进脑海，让你停住了手。',
+    ],
+    hotspots: [
+      { id: 'letter', label: '一封勒索信', x: '33.9%', y: '68.2%',
+        clueDesc: '（箱子缝里露出一角）「你欠我的，该还了。否则别怪我把那件事说出去。」——难道 Yvonne 是被仇家带走的？' },
+      { id: 'butler', label: '管家的证词', x: '46.4%', y: '64.6%',
+        clueDesc: '（你想起白天问过的话）管家说那晚"听见书房里有两个人说话"，可话说到一半，他的眼神就飘了。——他在隐瞒什么？' },
+      { id: 'redumbrella', label: '红伞人影', x: '76.1%', y: '48.2%',
+        clueDesc: '雨夜里，有人看见旧居门口闪过另一个身影，撑着一把红伞。——是凶手？还是同谋？' },
+    ],
+    inference: [
+      '勒索、谎言、第二个人影……每一条都指向一个更黑暗的故事。',
+      '可你是个好侦探。好侦探知道：当所有线索都想把你引向恐惧时，往往是有人不想让你看清——它们其实指向同一个出口。',
+    ],
+    puzzle: {
+      label: '▣ 谜题④  串联',
+      labelEn: 'Puzzle IV · The Thread',
+      prompt:
+`把今晚所有的线索连成一条线：
+被拨停的钟、提前燃尽的蜡烛、被悄悄抽走的书、会唱歌的盒子、"我最珍视的地方"——
+这一切，最想把你引向的，到底是什么？`,
+      options: [
+        { key: 'A', text: '一桩谋杀' },
+        { key: 'B', text: '一场绑架' },
+        { key: 'C', text: '一本日记' },
+        { key: 'D', text: '一笔旧债' },
+      ],
+      correctKey: 'C',
+      onCorrectFeedback: '你笑了。没有尸体，没有挣扎，只有一条铺得太用心的线——这不像一桩罪案，倒像有人，故意把一本日记，藏成了一场寻宝。',
+      onWrongFeedback: '回头看看你走过的每一步——它们太"整齐"了。整齐得不像犯罪，倒像是……有人在等你。',
+      nextLabel: '打开铁皮箱 →',
+    },
+    onSolved: () => renderScene3Outro(),
+  },
+
+  lock: {
+    id: 'lock',
+    examineKey: 'sl',
+    solvedIndex: 4,
+    title: '结案 · 最后一页',
+    titleEn: 'Epilogue · The Last Page',
+    bgImage: 'pics/scene/S4.png',
+    skipStatus: true,         // 单热点 → 直接通谜题，不用"已勘查 X/N"
+    intro: [
+      '锁面上，刻着一行很小的字。这是今晚最后一道关。',
+    ],
+    hotspots: [
+      { id: 'lock', label: '密码锁', x: '54.3%', y: '72.4%', clueDesc: '' },
+    ],
+  },
+};
+
+/* ============================================================
+   通用：探索场景渲染器
+   ============================================================ */
+function renderExploreScene(sceneId) {
+  state.currentScene = sceneId;
+  const scene = sceneData[sceneId];
+  clear();
+  setBgImage(null);   // 探索场景已在 stage 里嵌图，不再用全屏 bg
+
+  // 占位模式下，标题/旁白放在舞台上方；有真背景图时，叠在图上
+  if (!scene.bgImage) {
+    app.appendChild(el('div', { class: 'scene-title' }, scene.title));
+    scene.intro.forEach(t => app.appendChild(narr(t)));
+  }
+
+  const stage = el('div', { class: 'scene-stage' });
+  if (scene.bgImage) {
+    stage.classList.add('has-bg');
+    stage.appendChild(el('img', { class: 'scene-bg', src: scene.bgImage, alt: '' }));
+    const titleOverlay = el('div', { class: 'scene-title-overlay' });
+    if (scene.titleEn) {
+      titleOverlay.appendChild(el('div', { class: 'title-en' }, scene.titleEn));
+    }
+    titleOverlay.appendChild(el('div', { class: 'title-zh' }, scene.title));
+    stage.appendChild(titleOverlay);
+  }
+  stage.appendChild(el('div', { class: 'stage-bg-label' }, scene.stageLabel));
+
+  const isShelfQuest = (scene.id === 'scene1' && state.scene1ShelfQuestActive);
+
+  scene.hotspots.forEach(h => {
+    const examined = state.examined[scene.examineKey].has(h.id);
+    const isHighlight = isShelfQuest && h.id === 'shelf';
+    const cls = 'hotspot'
+      + (examined ? ' examined' : '')
+      + (isHighlight ? ' highlight' : '');
+    const hot = el('div', {
+      class: cls,
+      style: `left:${h.x};top:${h.y}`,
+    });
+    hot.dataset.id = h.id;
+    hot.appendChild(el('span', { class: 'hotspot-ring' }));
+    hot.appendChild(el('span', { class: 'hotspot-label' }, h.label));
+    if (isHighlight) {
+      // 提示直接挂在书架圆环上方，玩家的注意力被引到这里
+      hot.appendChild(el('span', { class: 'shelf-hint-bubble' }, '书架那儿……刚才好像没看仔细。'));
+    }
+    hot.addEventListener('click', e => {
+      e.stopPropagation();
+      // 序章：点信，展开 Z 的内容 + "翻面"按钮
+      if (scene.id === 'prologue' && h.id === 'letter') {
+        openLetterReveal(stage);
+        return;
+      }
+      // 结案锁：点锁直接进字谜
+      if (scene.id === 'lock' && h.id === 'lock') {
+        openLockPuzzle();
+        return;
+      }
+      // 场景一 shelf quest：点书架触发后续剧情，不开常规 tooltip
+      if (isShelfQuest && h.id === 'shelf') {
+        state.scene1ShelfQuestActive = false;
+        hot.classList.remove('highlight');
+        const statusTop = document.querySelector('.scene-status-top');
+        if (statusTop) statusTop.innerHTML = '';
+        showScene1OutroOverlay(0);
+        return;
+      }
+      openClueTooltip(scene, h, hot);
+    });
+    stage.appendChild(hot);
+  });
+
+  // 旁白叠层（仅在有真背景图时）
+  if (scene.bgImage && scene.intro && scene.intro.length) {
+    const overlay = el('div', { class: 'scene-narration' });
+    scene.intro.forEach(t => overlay.appendChild(narr(t)));
+    stage.appendChild(overlay);
+  }
+
+  // 点 stage 空白处关掉 tooltip
+  stage.addEventListener('click', e => {
+    if (!e.target.closest('.hotspot') && !e.target.closest('.clue-tooltip')) {
+      document.querySelectorAll('.clue-tooltip').forEach(t => t.remove());
+    }
+  });
+
+  // !! 关键：先把 stage 接入 DOM，再决定要不要加 status / 早退
+  app.appendChild(stage);
+
+  // skipStatus 的场景（如序章）不显示已勘查/推理按钮
+  if (scene.skipStatus) {
+    return;
+  }
+
+  // 状态：右上 hint + 右下 action（都叠在图上）
+  const statusTop = el('div', { class: 'scene-status-top' });
+  const statusAction = el('div', { class: 'scene-status-action' });
+  const total = scene.hotspots.length;
+  const seen  = state.examined[scene.examineKey].size;
+
+  if (isShelfQuest) {
+    // 提示已挂到 shelf 圆环上方，不重复显示在右上
+  } else if (seen < total) {
+    statusTop.appendChild(el('span', { class: 'hint' }, `（已勘查 ${seen}/${total}——在场景里点开剩下的可疑之处。）`));
+  } else if (!state.solved[scene.solvedIndex]) {
+    statusTop.appendChild(el('span', { class: 'hint' }, `（已勘查 ${seen}/${total}。准备好把这些拼起来时——）`));
+    const deduceBtn = el('button', {
+      class: 'primary',
+      onclick: () => openScenePuzzle(scene),
+    });
+    deduceBtn.appendChild(el('span', { class: 'btn-en' }, 'Deduce →'));
+    deduceBtn.appendChild(el('span', { class: 'btn-zh' }, '推理这一切'));
+    statusAction.appendChild(deduceBtn);
+  }
+  stage.appendChild(statusTop);
+  stage.appendChild(statusAction);
+}
+
+/* 点击热点 → 在热点旁浮现一个小卡片（不再用屏幕中央的模态） */
+function openClueTooltip(scene, hotspot, hotEl) {
+  // 关掉现有 tooltip
+  document.querySelectorAll('.clue-tooltip').forEach(t => t.remove());
+
+  // 先记 examined + 刷新场景
+  const firstTime = !state.examined[scene.examineKey].has(hotspot.id);
+  if (firstTime) {
+    state.examined[scene.examineKey].add(hotspot.id);
+    renderExploreScene(scene.id);
+    // 重渲染后，原 hotEl DOM 已没了，重新找
+    hotEl = document.querySelector(`.scene-stage .hotspot[data-id="${hotspot.id}"]`);
+    if (!hotEl) return;
+  }
+
+  const tip = el('div', { class: 'clue-tooltip' });
+  tip.appendChild(el('div', { class: 'clue-tooltip-title' }, hotspot.label));
+  if (hotspot.propImage) {
+    const wrap = el('div', { class: 'clue-prop' });
+    wrap.appendChild(el('img', { src: hotspot.propImage, alt: hotspot.label }));
+    tip.appendChild(wrap);
+  } else if (hotspot.propLabel) {
+    const ph = el('div'); ph.appendChild(placeholder(hotspot.propLabel)); tip.appendChild(ph);
+  }
+  tip.appendChild(narr(hotspot.clueDesc));
+  if (hotspot.extraLabel) {
+    const ex = el('div', { style: 'margin-top: 6px' });
+    ex.appendChild(placeholder(hotspot.extraLabel));
+    tip.appendChild(ex);
+  }
+  const closeBtn = el('button', {
+    class: 'tooltip-close',
+    onclick: e => { e.stopPropagation(); tip.remove(); }
+  }, '×');
+  tip.appendChild(closeBtn);
+
+  const stage = hotEl.closest('.scene-stage');
+  stage.appendChild(tip);
+
+  // 必须 append 后才能拿到 offsetWidth/Height
+  positionTooltip(tip, hotEl, stage);
+}
+
+/* 自动选择 右 / 左 / 上 / 下 哪边有空 */
+function positionTooltip(tip, hotEl, stageEl) {
+  const stageRect = stageEl.getBoundingClientRect();
+  const hotRect = hotEl.getBoundingClientRect();
+  const hotL = hotRect.left - stageRect.left;
+  const hotT = hotRect.top - stageRect.top;
+  const hotW = hotRect.width;
+  const hotH = hotRect.height;
+  const tipW = tip.offsetWidth;
+  const tipH = tip.offsetHeight;
+  const GAP = 12;
+  const PAD = 10;
+  const stageW = stageRect.width;
+  const stageH = stageRect.height;
+
+  // 优先放右侧
+  let left = hotL + hotW + GAP;
+  let top  = hotT + (hotH - tipH) / 2;
+  let arrow = 'left';
+
+  if (left + tipW > stageW - PAD) {
+    // 右侧不够，试左侧
+    left = hotL - tipW - GAP;
+    arrow = 'right';
+    if (left < PAD) {
+      // 左右都不够，试上方
+      left = hotL + (hotW - tipW) / 2;
+      top  = hotT - tipH - GAP;
+      arrow = 'bottom';
+      if (top < PAD) {
+        // 改放下方
+        top = hotT + hotH + GAP;
+        arrow = 'top';
+      }
+    }
+  }
+  // 横/纵向夹紧
+  left = Math.max(PAD, Math.min(stageW - tipW - PAD, left));
+  top  = Math.max(PAD, Math.min(stageH - tipH - PAD, top));
+
+  tip.style.left = left + 'px';
+  tip.style.top  = top  + 'px';
+  tip.setAttribute('data-arrow', arrow);
+}
+
+function openScenePuzzle(scene) {
+  openPuzzleModal({
+    label: scene.puzzle.label,
+    preamble: scene.inference,
+    prompt: scene.puzzle.prompt,
+    options: scene.puzzle.options,
+    correctKey: scene.puzzle.correctKey,
+    onCorrectFeedback: scene.puzzle.onCorrectFeedback,
+    onWrongFeedback: scene.puzzle.onWrongFeedback,
+    nextLabel: scene.puzzle.nextLabel,
+    onSolved: () => { state.solved[scene.solvedIndex] = true; scene.onSolved(); }
+  });
+}
+
+/* ============================================================
+   序章
+   ============================================================ */
+function renderIntro() {
+  clear();
+  setBgImage('pics/scene/S0.png');
+  app.appendChild(el('h1', {}, '最 · 后 · 一 · 夜'));
+  app.appendChild(el('div', { class: 'scene-title' }, '序章 · 委托'));
+  app.appendChild(narr('凌晨一点四十七分。雨敲了三个小时的窗，没有要停的意思。'));
+  app.appendChild(narr('桌上的台灯把你的影子拉得很长。你已经很久没接到一桩，值得熬夜的案子了。'));
+  app.appendChild(narr('在翻开这桩案子之前，请先签下你的名字——'));
+
+  const input = el('input', { class: 'name-input', type: 'text', placeholder: '侦探代号', maxlength: '12' });
+  const submit = el('button', {
+    class: 'primary',
+    style: 'margin-left: 14px; vertical-align: middle',
+    onclick: () => {
+      const v = input.value.trim();
+      if (!v) { input.focus(); return; }
+      state.detectiveName = v;
+      renderExploreScene('prologue');
+    }
+  }, '签名');
+  const wrap = el('div', { style: 'margin: 16px 0; display: flex; align-items: center; flex-wrap: wrap' });
+  wrap.appendChild(el('span', { style: 'margin-right: 6px' }, '侦探代号：'));
+  wrap.appendChild(input);
+  wrap.appendChild(submit);
+  app.appendChild(wrap);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit.click(); });
+  input.focus();
+}
+
+function openIntroPuzzle() {
+  openPuzzleModal({
+    label: '▣ 谜题①  破译',
+    labelEn: 'Puzzle I · Cipher',
+    preamble: [
+`信纸背面，写着：
+
+　旧城东头有座空宅，
+　居人都说闹了鬼，
+　书生模样的影子常在窗后，
+　房里的灯，至今还亮着。`
+    ],
+    prompt: 'Yvonne 的日记，最可能藏在哪里？',
+    options: [
+      { key: 'A', text: '旧城的钟楼' },
+      { key: 'B', text: '旧居的书房' },
+      { key: 'C', text: '城郊的墓园' },
+      { key: 'D', text: '港口的仓库' },
+    ],
+    correctKey: 'B',
+    onCorrectFeedback: '「旧·居·书·房。」你把四个字念出声，雨好像小了一瞬。出发吧。',
+    onWrongFeedback: '再把每行开头那个字连起来读一遍——答案就藏在字缝里。',
+    nextLabel: '撑伞，走进雨里 →',
+    onSolved: () => { state.solved[0] = true; renderExploreScene('scene1'); }
+  });
+}
+
+/* ============================================================
+   场景出口（outro）
+   ============================================================ */
+/* 序章：点信 → 在 S0 场景上展开 Z 的信内容 + "翻看信纸背面"按钮 */
+function openLetterReveal(stage) {
+  stage.querySelectorAll('.scene-outro-overlay, .clue-tooltip').forEach(t => t.remove());
+
+  const overlay = el('div', { class: 'scene-outro-overlay letter-reveal' });
+
+  const head = el('div', {
+    style: 'font-size:12px;letter-spacing:4px;color:rgba(220,220,235,0.65);padding-bottom:8px;margin-bottom:10px;border-bottom:1px dashed rgba(220,220,235,0.25);'
+  }, '【Z】');
+  overlay.appendChild(head);
+
+  const body = el('p', { style: 'white-space:pre-wrap;font-size:14px;line-height:1.9' });
+  body.textContent =
+`「${state.detectiveName}侦探，久仰。
+　 三天前，旧物收藏家 Yvonne Hughes 在她反锁的书房里凭空消失了。
+　 ——她年轻时旅居海外，回来后便给自己留了这个外文名，深居简出，少有人识得真容。
+　 没有尸体，没有脚印，门窗从内反锁。警方查了三天，一无所获，已经准备草草结案。
+　 但我知道——她把所有的真话，都放在了一个铁皮盒。
+　 找到那个铁皮盒子，你就找到了全部真相。
+　 我只有一个请求：在 天亮之前，把它找出来。
+　 线索，我已经留在信里了。」`;
+  overlay.appendChild(body);
+
+  overlay.appendChild(el('p', { class: 'dim', style: 'margin-top:12px;font-size:13px' },
+    '信纸背面有一行被水洇开的小字。'
+  ));
+
+  overlay.appendChild(el('div', { style: 'text-align: right; margin-top: 14px' },
+    el('button', { class: 'primary', onclick: openIntroPuzzle }, '翻看信纸背面 →')
+  ));
+
+  const close = el('button', {
+    class: 'tooltip-close',
+    onclick: e => { e.stopPropagation(); overlay.remove(); }
+  }, '×');
+  overlay.appendChild(close);
+
+  stage.appendChild(overlay);
+}
+
+/* 场景一：玩家点亮的书架后，在图上叠一个对话框，点击逐句推进 */
+function showScene1OutroOverlay(idx) {
+  const stage = document.querySelector('.scene-stage');
+  if (!stage) return;
+
+  // 移除旧的 outro overlay
+  const existing = stage.querySelector('.scene-outro-overlay');
+  if (existing) existing.remove();
+
+  const overlay = el('div', { class: 'scene-outro-overlay' });
+
+  if (idx === 0) {
+    overlay.appendChild(el('p', {}, '你伸手探进那个一尘不染的书架缺口。指尖触到一行刻在木板上的小字：'));
+    overlay.appendChild(el('p', { class: 'quote' }, '「书不在架上。它跟着会唱歌的盒子，去了最高的地方。」'));
+    overlay.appendChild(el('span', { class: 'click-hint' }, '点击继续…'));
+    overlay.classList.add('clickable');
+    overlay.onclick = e => {
+      if (e.target.closest('.hotspot, .clue-tooltip')) return;
+      showScene1OutroOverlay(1);
+    };
+  } else if (idx === 1) {
+    overlay.appendChild(el('p', { class: 'dim' }, '（线索入袋：会唱歌的盒子？最高的地方？）'));
+    overlay.appendChild(el('span', { class: 'click-hint' }, '点击继续…'));
+    overlay.classList.add('clickable');
+    overlay.onclick = e => {
+      if (e.target.closest('.hotspot, .clue-tooltip')) return;
+      showScene1OutroOverlay(2);
+    };
+  } else {
+    overlay.appendChild(el('div', { style: 'text-align: center; padding: 4px;' },
+      el('button', {
+        class: 'primary',
+        onclick: () => renderExploreScene('scene2')
+      }, '顺着旋转楼梯，往上 →')
+    ));
+  }
+
+  stage.appendChild(overlay);
+}
+
+function renderScene2Outro() {
+  clear();
+  setBgImage(null);
+  app.appendChild(el('div', { class: 'scene-title' }, '第一幕 · 现场　|　场景二 · 阁楼'));
+  app.appendChild(narr('音乐盒里没有珠宝，只有一张折叠的纸——'));
+
+  const mapCard = el('div', { class: 'interactive-card' });
+  mapCard.appendChild(document.createTextNode('【折叠的纸 · 点击展开】'));
+  app.appendChild(mapCard);
+
+  let revealed = false;
+  mapCard.addEventListener('click', () => {
+    openModal({
+      title: '手绘藏宝图',
+      size: 'lg',
+      contentBuilder: () => {
+        const c = el('div');
+        c.appendChild(el('img', {
+          src: 'pics/tools/t5.png',
+          alt: '手绘藏宝图',
+          class: 'modal-prop'
+        }));
+        c.appendChild(narr('一幅手绘地图，标着旧居后院一棵老槐树，树下画着一个小小的箱子。'));
+        c.appendChild(narr('地图背面写着：「我把最要紧的东西，埋在我最珍视的地方。」'));
+        return c;
+      },
+      onClose: () => {
+        if (revealed) return;
+        revealed = true;
+        app.appendChild(narr('（线索入袋：后院 · 老槐树 · 一只箱子。）', true));
+        const btnRow = el('div', { style: 'text-align: right; max-width: 780px; margin: 16px auto 0;' });
+        btnRow.appendChild(el('button', { class: 'primary', onclick: () => renderExploreScene('scene3') }, '下楼，走进后院的雨里 →'));
+        app.appendChild(btnRow);
+      }
+    });
+  });
+}
+
+function renderScene3Outro() {
+  clear();
+  setBgImage(null);
+  app.appendChild(el('div', { class: 'scene-title' }, '第二幕 · 疑云　|　场景三 · 后院'));
+  app.appendChild(narr('你打开铁皮箱。'));
+  app.appendChild(narr('里面没有尸骨，没有赃款。'));
+  app.appendChild(narr('只有一本厚厚的日记本——皮面磨得发亮，看得出被人翻过无数次。'));
+  app.appendChild(narr('它的扣锁，是一把刻着字的密码锁。'));
+  app.appendChild(el('button', { class: 'primary', onclick: renderLock }, '凑近看锁面 →'));
+}
+
+/* ============================================================
+   结案 · 字谜开锁
+   ============================================================ */
+/* 锁面：和其它探索场景一样，进 lock 场景，S4 为底图，圆环热点点锁触发字谜 */
+function renderLock() {
+  renderExploreScene('lock');
+}
+
+function openLockPuzzle() {
+  openPuzzleModal({
+    label: '谜题⑤ · 最后的锁',
+    labelEn: 'Puzzle V · The Lock',
+    preamble: [
+`锁面上刻着一段尚未完成的谜语：
+「这里将放置最后一道谜题的题面。」`
+    ],
+    prompt: '请选择正确答案：',
+    options: [
+      { key: 'A', text: '选项一' },
+      { key: 'B', text: '选项二' },
+      { key: 'C', text: '选项三' },
+      { key: 'D', text: '选项四' },
+    ],
+    correctKey: 'A',
+    onCorrectFeedback:
+`你拨动锁上的机关。
+随着一声轻响，锁扣松开了。`,
+    onWrongFeedback: '锁没有打开。也许还需要重新理解谜面中的线索。',
+    nextLabel: '翻开日记本 →',
+    onSolved: () => {
+      state.solved[4] = true;
+      document.body.classList.add('warm');
+      renderBookIntro();
+    }
+  });
+}
+
+/* ============================================================
+   翻页纪念册（鼠标视差 + 点击翻页 · 全立体）
+   三页中性占位内容，最后一页展示后可取出夹页中的信
+   ============================================================ */
+const bookPages = [
+  { front: { label: '纪念页①', body: '【这里可以放置公开的图片或文字】' }, back: { label: '', body: '' } },
+  { front: { label: '纪念页②', body: '【这里可以放置公开的图片或文字】' }, back: { label: '', body: '' } },
+  { front: { label: '纪念页③', body: '【这里可以放置公开的图片或文字】' }, back: { label: '', body: '' } },
+];
+
+function renderBookIntro() {
+  clear();
+  setBgImage('pics/scene/S4.png');
+  state.currentScene = 'book-intro';
+  app.appendChild(el('div', { class: 'scene-title' }, '结案 · 翻开'));
+  app.appendChild(narr('日记本缓缓翻开。冷色调的雨夜，一点一点退成暖光。'));
+  app.appendChild(narr('你准备读到 Yvonne 的字迹，读到那个困了你一整夜的真相。'));
+  app.appendChild(narr('可这本日记里，一个字的案情都没有。'));
+  app.appendChild(el('button', { class: 'primary', onclick: renderBook }, '一页一页看看 →'));
+}
+
+function renderBook() {
+  clear();
+  setBgImage('pics/scene/S4.png');
+  state.currentScene = 'book';
+  app.appendChild(el('div', { class: 'scene-title' }, '结案 · 立体翻页纪念册'));
+
+  const stage = el('div', { class: 'book-stage' });
+  const book = el('div', { class: 'book' });
+  book.appendChild(el('div', { class: 'book-base' }));
+
+  function buildFace(face) {
+    const frame = el('div', { class: 'photo-frame' });
+    if (face.image) {
+      frame.classList.add('has-image');
+      frame.appendChild(el('img', { src: face.image, alt: face.label }));
+    } else {
+      frame.textContent = face.body;
+    }
+    return frame;
+  }
+
+  const pageEls = bookPages.map((p) => {
+    const page = el('div', { class: 'page' });
+    const front = el('div', { class: 'front' + (p.front.image ? ' has-image' : '') });
+    front.appendChild(buildFace(p.front));
+    front.appendChild(el('div', { class: 'photo-caption' }, p.front.label));
+    const back = el('div', { class: 'back' + (p.back.image ? ' has-image' : '') });
+    back.appendChild(buildFace(p.back));
+    back.appendChild(el('div', { class: 'photo-caption' }, p.back.label));
+    page.appendChild(front);
+    page.appendChild(back);
+    book.appendChild(page);
+    return page;
+  });
+
+  stage.appendChild(book);
+  app.appendChild(stage);
+
+  const ctrl = el('div', { class: 'book-controls' });
+  const prev = el('button', {}, '← 上一页');
+  const next = el('button', { class: 'primary' }, '下一页 →');
+  const done = el('button', { class: 'primary' }, '取出夹页里滑出的那封信 →');
+  done.style.display = 'none';
+  ctrl.appendChild(prev);
+  ctrl.appendChild(next);
+  ctrl.appendChild(done);
+  app.appendChild(ctrl);
+
+  function update() {
+    pageEls.forEach((pg, i) => {
+      const flipped = i < state.bookPage;
+      pg.classList.toggle('flipped', flipped);
+      pg.style.zIndex = flipped ? (i + 1) : (bookPages.length - i + 100);
+    });
+    prev.disabled = state.bookPage === 0;
+    // 当 Z 信跨页可见（bookPage = N-1，即末页摊在右侧）时，就该出现"取出"按钮
+    if (state.bookPage >= bookPages.length - 1) {
+      next.style.display = 'none';
+      done.style.display = '';
+    } else {
+      next.style.display = '';
+      done.style.display = 'none';
+    }
+  }
+  prev.addEventListener('click', () => { if (state.bookPage > 0) { state.bookPage--; update(); } });
+  next.addEventListener('click', () => { if (state.bookPage < bookPages.length - 1) { state.bookPage++; update(); } });
+  done.addEventListener('click', renderLetter);
+
+  state.bookPage = 0;
+  update();
+  attachBookParallax(stage, book);
+}
+
+function attachBookParallax(stage, book) {
+  let targetRX = 0, targetRY = 0;
+  let currRX = 0, currRY = 0;
+  let running = false;
+  const MAX_RY = 14, MAX_RX = 9, EASE = 0.12;
+  function setTargetFromEvent(e) {
+    const rect = stage.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const nx = Math.max(-1, Math.min(1, (e.clientX - cx) / (rect.width / 2)));
+    const ny = Math.max(-1, Math.min(1, (e.clientY - cy) / (rect.height / 2)));
+    targetRY = nx * MAX_RY;
+    targetRX = -ny * MAX_RX;
+    start();
+  }
+  function reset() { targetRX = 0; targetRY = 0; start(); }
+  function start() {
+    if (running) return;
+    running = true;
+    const step = () => {
+      currRX += (targetRX - currRX) * EASE;
+      currRY += (targetRY - currRY) * EASE;
+      book.style.transform = `rotateX(${currRX.toFixed(2)}deg) rotateY(${currRY.toFixed(2)}deg)`;
+      if (Math.abs(targetRX - currRX) < 0.05 && Math.abs(targetRY - currRY) < 0.05) { running = false; return; }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  stage.addEventListener('mousemove', setTargetFromEvent);
+  stage.addEventListener('mouseleave', reset);
+}
+
+/* ============================================================
+   Z 的信 / 留白页 / 结束
+   ============================================================ */
+function renderLetter() {
+  clear();
+  setBgImage('pics/scene/S4.png');
+  state.currentScene = 'letter';
+  app.appendChild(el('div', { class: 'scene-title' }, '结案 · 夹页里滑出的信'));
+  app.appendChild(narr('看到最后一页时，夹页里滑出一封信。'));
+
+  const stage = el('div', { class: 'letter-stage' });
+  const letter = el('div', { class: 'letter' });
+  letter.textContent =
+`亲爱的侦探：
+
+我必须坦白——这世上没有 Yvonne Hughes，也没有什么失踪案。
+是我，编了这一整夜的雨、这座空宅、这些谜题，
+只为了让你亲手，翻到这一页。
+
+你查了一整夜的真相，
+结案陈词只有一句——
+
+你值得被人，这样大费周章地爱着。
+
+生日快乐。
+
+　　　　　　　　　　　　　—— Z
+　　　　　　　　　　　　　（也就是那个一直署名 Z 的人）`;
+  stage.appendChild(letter);
+  app.appendChild(stage);
+  attachLetterParallax(stage, letter);
+
+  const btnRow = el('div', { style: 'text-align: center; margin-top: 20px' });
+  btnRow.appendChild(el('button', { class: 'primary', onclick: renderBlankPage }, '翻到日记的最后一页 →'));
+  app.appendChild(btnRow);
+}
+
+/* Z 信视差：鼠标在信上方移动时，整张信轻微 3D 倾斜，离开自动回正 */
+function attachLetterParallax(stage, letter) {
+  let targetRX = 0, targetRY = 0, currRX = 0, currRY = 0, running = false;
+  const MAX_RY = 10, MAX_RX = 6, EASE = 0.12;
+  function setTargetFromEvent(e) {
+    const rect = stage.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const nx = Math.max(-1, Math.min(1, (e.clientX - cx) / (rect.width / 2)));
+    const ny = Math.max(-1, Math.min(1, (e.clientY - cy) / (rect.height / 2)));
+    targetRY = nx * MAX_RY;
+    targetRX = -ny * MAX_RX;
+    start();
+  }
+  function reset() { targetRX = 0; targetRY = 0; start(); }
+  function start() {
+    if (running) return;
+    running = true;
+    const step = () => {
+      currRX += (targetRX - currRX) * EASE;
+      currRY += (targetRY - currRY) * EASE;
+      letter.style.transform = `rotateX(${currRX.toFixed(2)}deg) rotateY(${currRY.toFixed(2)}deg)`;
+      if (Math.abs(targetRX - currRX) < 0.05 && Math.abs(targetRY - currRY) < 0.05) {
+        running = false; return;
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  stage.addEventListener('mousemove', setTargetFromEvent);
+  stage.addEventListener('mouseleave', reset);
+}
+
+function renderBlankPage() {
+  clear();
+  setBgImage('pics/scene/S4.png');
+  state.currentScene = 'blank';
+  app.appendChild(el('div', { class: 'scene-title' }, '日记 · 最后一页'));
+  app.appendChild(narr('日记的最后一页，是空白的。'));
+  app.appendChild(narr('页脚只写着一句：'));
+  const blank = el('div', { class: 'blank-page' });
+  blank.textContent =
+`前面的故事，是我写的。
+
+你的未来，等你来写。`;
+  app.appendChild(blank);
+  const ctrl = el('div', { style: 'margin-top: 20px; text-align:center' });
+  ctrl.appendChild(el('button', { onclick: renderEnd }, '合上日记'));
+  ctrl.appendChild(el('button', { class: 'primary', onclick: restart }, '再看一遍'));
+  app.appendChild(ctrl);
+}
+
+function renderEnd() {
+  clear();
+  state.currentScene = 'end';
+  app.appendChild(el('div', { class: 'scene-title', style: 'text-align:center' }, '· 完 ·'));
+  const credits = el('div', { class: 'credits' });
+  credits.appendChild(el('p', {}, 'An interactive mystery game'));
+  app.appendChild(credits);
+}
+
+function restart() {
+  Object.assign(state, {
+    detectiveName: '',
+    solved: [false, false, false, false, false],
+    currentScene: 'intro',
+    examined: { sp: new Set(), s1: new Set(), s2: new Set(), s3: new Set(), sl: new Set() },
+    bookPage: 0,
+    scene1ShelfQuestActive: false,
+  });
+  document.body.classList.remove('warm');
+  setBgImage(null);
+  renderIntro();
+}
+
+/* ============================================================
+   启动
+   ============================================================ */
+renderIntro();
+</script>
+</body>
+</html>
