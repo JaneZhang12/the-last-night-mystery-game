@@ -5,6 +5,8 @@
 玩家将在雨夜收到一封神秘委托，探索旧宅中的不同场景，收集线索并解开谜题，最终翻开日记本，抵达故事的结局。
 日记本的照片很适合放置小惊喜（比如生日、纪念日等等）。
 
+<img width="959" height="415" alt="sample1" src="https://github.com/user-attachments/assets/4f5f68be-5772-4c00-86b6-60b41c4930a6" />
+
 ## 游戏特色
 
 - 单文件 HTML 游戏，无需安装或构建
